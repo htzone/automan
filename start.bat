@@ -1,0 +1,1 @@
+java -jar D:/IdeaProject/automan/target/automan-1.0-SNAPSHOT.jar
