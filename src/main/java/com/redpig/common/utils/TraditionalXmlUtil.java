@@ -14,7 +14,7 @@ import java.io.IOException;
 /**
  * Created by hetao on 2019/4/11.
  */
-public class DomUtil {
+public class TraditionalXmlUtil {
     public static void main(String[] args) throws Exception{
         //创建一个DocumentBuilderFactory的对象
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
