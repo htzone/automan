@@ -6,11 +6,15 @@ import org.slf4j.LoggerFactory;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * AutoManRobot
@@ -20,7 +24,9 @@ import java.io.File;
  */
 public class AutoManRobot {
     private final Logger LOGGER = LoggerFactory.getLogger(AutoManRobot.class);
+    private static final int INTERVAL = 500;
     private Robot robot;
+    private List<Integer> pressKeys = new ArrayList<>();
 
     public AutoManRobot() {
         try {
@@ -31,27 +37,60 @@ public class AutoManRobot {
     }
 
     public static void main(String[] args) {
-        String capturePath1 = "D:/point1.png";
-        String capturePath2 = "D:/point2.png";
+        String capturePath1 = "D:/wjcszs.png";
+        String capturePath2 = "D:/laopo.png";
 
         AutoManRobot autoManRobot = new AutoManRobot();
-        autoManRobot.delay(10000);
-//        // 屏幕截图工具
-//        autoManRobot.delayMouseScreenCapture(5000, capturePath);
+        try {
 
-        // 定位到截图位置，执行具体操作
-        Point point1 = autoManRobot.getScreenPointByCapture(capturePath1);
-        autoManRobot.mouseClick(point1);
+            // 屏幕截图工具
+//            autoManRobot.delayMouseScreenCapture(5000, capturePath1);
 
-        autoManRobot.delay(500);
-        Point point2 = autoManRobot.getScreenPointByCapture(capturePath2);
-        point2.translate(50, 50);
-        autoManRobot.mouseClick(point2);
+//            // 打开微信
+            autoManRobot.pressKey(KeyEvent.VK_CONTROL, KeyEvent.VK_ALT, KeyEvent.VK_W);
+            autoManRobot.delay(500);
+            autoManRobot.releaseKey(KeyEvent.VK_CONTROL, KeyEvent.VK_ALT, KeyEvent.VK_W);
+//
+//            // 定位到截图位置，执行具体操作
+            Point point1 = autoManRobot.getScreenPointByCapture(capturePath1);
+            autoManRobot.mouseClick(point1);
+//
+//            autoManRobot.delay(500);
+//            Point point2 = autoManRobot.getScreenPointByCapture(capturePath2);
+////            point2.translate(50, 50);
+//            autoManRobot.mouseClick(point2);
+//
+//            autoManRobot.delay(1000);
+//            autoManRobot.inputText("你好,RedPig!测试2");
+//            autoManRobot.delay(500);
+//            autoManRobot.enter();
+        } finally {
+            autoManRobot.close();
+        }
+    }
 
-        autoManRobot.delay(1000);
-        autoManRobot.inputText("你好,RedPig!测试2");
-        autoManRobot.delay(500);
-        autoManRobot.enter();
+    public void close() {
+        releaseAllPressKey();
+    }
+
+    public void releaseAllPressKey() {
+        for (Integer key : pressKeys) {
+            robot.keyRelease(key);
+        }
+    }
+
+    public void pressKey(int... key) {
+        for (int i = 0; i < key.length; i++) {
+            robot.keyPress(key[i]);
+            pressKeys.add(key[i]);
+        }
+    }
+
+    public void releaseKey(int... key) {
+        for (int i = 0; i < key.length; i++) {
+            robot.keyRelease(key[i]);
+            pressKeys.remove(key);
+        }
     }
 
     /**
@@ -66,6 +105,31 @@ public class AutoManRobot {
         robot.keyPress(KeyEvent.VK_V);
         robot.delay(1000);
         robot.keyRelease(KeyEvent.VK_CONTROL);
+    }
+
+    /**
+     * 读取内容
+     *
+     * @param point 位置
+     * @return 返回读取内容
+     */
+    public String readText(Point point) {
+        int x = (int) point.getX();
+        int y = (int) point.getY();
+        robot.mouseMove(x, y);
+        robot.delay(INTERVAL);
+        robot.mousePress(InputEvent.BUTTON1_MASK);
+        robot.mouseRelease(InputEvent.BUTTON1_MASK);
+        robot.delay(INTERVAL);
+        robot.keyPress(KeyEvent.VK_CONTROL);
+        robot.keyPress(KeyEvent.VK_A);
+        robot.keyRelease(KeyEvent.VK_A);
+        robot.delay(INTERVAL);
+        robot.keyPress(KeyEvent.VK_C);
+        robot.keyRelease(KeyEvent.VK_C);
+        robot.keyRelease(KeyEvent.VK_CONTROL);
+        robot.delay(INTERVAL);
+        return getSystemClipboard();
     }
 
     public void enter() {
@@ -136,16 +200,18 @@ public class AutoManRobot {
         Point point = null;
         try {
             BufferedImage image = getScreen(robot);
-            BufferedImage img = ImageIO.read(new File(capturePath));
+            BufferedImage capture = ImageIO.read(new File(capturePath));
             int width = image.getWidth();
             int height = image.getHeight();
+            int captureWidth = capture.getWidth();
+            int captureHeight = capture.getHeight();
             int targetX = -1;
             int targetY = -1;
             boolean hasFound = false;
-            for (int x = 0; x < width - 20; ++x) {
+            for (int x = 0; x < width - captureWidth; ++x) {
                 if (!hasFound) {
-                    for (int y = 0; y < height - 20; ++y) {
-                        if (isEqual(x, y, image, img)) {
+                    for (int y = 0; y < height - captureHeight; ++y) {
+                        if (isEqual(x, y, image, capture)) {
                             LOGGER.info("匹配到坐标，x:" + x + ", y:" + y);
                             targetX = x;
                             targetY = y;
@@ -182,7 +248,7 @@ public class AutoManRobot {
             Point location = MouseInfo.getPointerInfo().getLocation();
             int x = (int) location.getX();
             int y = (int) location.getY();
-            screenCapture(x, y, 20, 20, outputPath);
+            screenCapture(x + 20, y + 20, 20, 20, outputPath);
             LOGGER.info("截图成功，存放路径为：" + outputPath);
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
@@ -232,5 +298,19 @@ public class AutoManRobot {
         Double d = count / (double) total;
         // 只需要50%相似即可
         return Double.compare(d, 0.5f) > 0;
+    }
+
+    public static String getSystemClipboard() {
+        Clipboard sysClb = Toolkit.getDefaultToolkit().getSystemClipboard();
+        try {
+            Transferable t = sysClb.getContents(null);
+            if (null != t && t.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+                String text = (String) t.getTransferData(DataFlavor.stringFlavor);
+                return text;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
