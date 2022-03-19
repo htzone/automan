@@ -15,9 +15,8 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.List;
+import java.util.*;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -175,7 +174,23 @@ public abstract class Browser {
 			this.alive.set(false);
 		}
 	}
-	
+
+	/**
+	 * 打开一个新窗口，并跳转到指定url
+	 * @param url 要跳转到的url
+	 */
+	public void open(String url) {
+		this.latestUrl = url;
+		try {
+			this.ensureBrowser();
+			String js = "window.open('" + url + "')";
+			exeJs(js);
+		} catch (UnreachableBrowserException e) {
+			LOG.error("浏览器挂了", e);
+			this.alive.set(false);
+		}
+	}
+
 	/**
 	 * 跳转到指定url
 	 * @param url 要跳转到的url
@@ -204,7 +219,51 @@ public abstract class Browser {
 			this.alive.set(false);
 		}
 	}
-	
+
+	/**
+	 * 获取当前Window
+	 */
+	public String getWindow() {
+		try {
+			this.ensureBrowser();
+			return this.driver.getWindowHandle();
+		} catch (UnreachableBrowserException e) {
+			LOG.error("浏览器挂了", e);
+			this.alive.set(false);
+		}
+		return "";
+	}
+
+	/**
+	 * 获取所有的Window
+	 */
+	public List<String> getWindows() {
+		List<String> windows = new ArrayList<>();
+		try {
+			this.ensureBrowser();
+			// driver返回的是有序set
+			windows = new ArrayList<>(this.driver.getWindowHandles());
+		} catch (UnreachableBrowserException e) {
+			LOG.error("浏览器挂了", e);
+			this.alive.set(false);
+		}
+		return windows;
+	}
+
+	/**
+	 * 切换到Window
+	 * @param window id属性或者name属性
+	 */
+	public void switchToWindow(String window) {
+		try {
+			this.ensureBrowser();
+			this.driver.switchTo().window(window);
+		} catch (UnreachableBrowserException e) {
+			LOG.error("浏览器挂了", e);
+			this.alive.set(false);
+		}
+	}
+
 	/**
 	 * 切换到frame
 	 * @param frameIdOrName id属性或者name属性
