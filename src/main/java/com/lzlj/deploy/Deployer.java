@@ -25,7 +25,7 @@ public class Deployer {
     private static final Logger LOGGER = LoggerFactory.getLogger(Deployer.class);
 
     public static void main(String[] args) {
-
+        deploy();
     }
 
     private static void deploy() {
